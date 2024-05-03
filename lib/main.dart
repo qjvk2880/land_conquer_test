@@ -1,4 +1,9 @@
+import 'dart:async';
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
+import 'package:location/location.dart' as l;
+import 'package:permission_handler/permission_handler.dart';
 
 void main() {
   runApp(const MyApp());
@@ -15,55 +20,199 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
         useMaterial3: true,
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      home: const HomeScreen(title: 'Flutter Demo Home Page'),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
+class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key, required this.title});
 
   final String title;
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+class _HomeScreenState extends State<HomeScreen> {
+  bool gpsEnabled = false;
+  bool permissionGranted = false;
+  l.Location location = l.Location();
+  late StreamSubscription subscription;
+  bool trackingEnabled = false;
 
-  void _incrementCounter() {
-    setState(() {
-      _counter++;
-    });
+  List<l.LocationData> locations = [];
+
+  @override
+  void initState() {
+    super.initState();
+    checkStatus();
+  }
+
+  @override
+  void dispose() {
+    stopTracking();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: Text(widget.title),
+        title: const Text('Location App'),
+        centerTitle: true,
       ),
-      body: Center(
+      body: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text(
-              'You have pushed the buttonsss this many times:',
+          mainAxisSize: MainAxisSize.max,
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: [
+            buildListTile(
+              "GPS",
+              gpsEnabled
+                  ? const Text("Okey")
+                  : ElevatedButton(
+                  onPressed: () {
+                    requestEnableGps();
+                  },
+                  child: const Text("Enable Gps")),
             ),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
+            buildListTile(
+              "Permission",
+              permissionGranted
+                  ? const Text("Okey")
+                  : ElevatedButton(
+                  onPressed: () {
+                    requestLocationPermission();
+                  },
+                  child: const Text("Request Permission")),
             ),
+            buildListTile(
+              "Location",
+              trackingEnabled
+                  ? ElevatedButton(
+                  onPressed: () {
+                    stopTracking();
+                  },
+                  child: const Text("Stop"))
+                  : ElevatedButton(
+                  onPressed: gpsEnabled && permissionGranted
+                      ? () {
+                    startTracking();
+                  }
+                      : null,
+                  child: const Text("Start")),
+            ),
+            Expanded(
+                child: ListView.builder(
+                  itemCount: locations.length,
+                  itemBuilder: (context, index) {
+                    return ListTile(
+                      title: Text(
+                          "${locations[index].latitude} ${locations[index].longitude}"),
+                    );
+                  },
+                ))
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ),
     );
+  }
+
+  ListTile buildListTile(
+      String title,
+      Widget? trailing,
+      ) {
+    return ListTile(
+      dense: true,
+      title: Text(title),
+      trailing: trailing,
+    );
+  }
+
+  void checkStatus() async {
+    bool _permissionGranted = await isPermissionGranted();
+    bool _gpsEnabled = await isGpsEnabled();
+    setState(() {
+      permissionGranted = _permissionGranted;
+      gpsEnabled = _gpsEnabled;
+    });
+  }
+
+  Future<bool> isPermissionGranted() async {
+    return await Permission.locationWhenInUse.isGranted;
+  }
+
+  Future<bool> isGpsEnabled() async {
+    return await Permission.location.serviceStatus.isEnabled;
+  }
+
+  void requestEnableGps() async {
+    if (gpsEnabled) {
+      log("Already open");
+    } else {
+      bool isGpsActive = await location.requestService();
+      if (!isGpsActive) {
+        setState(() {
+          gpsEnabled = false;
+        });
+        log("User did not turn on GPS");
+      } else {
+        log("gave permission to the user and opened it");
+        setState(() {
+          gpsEnabled = true;
+        });
+      }
+    }
+  }
+
+  void requestLocationPermission() async {
+    PermissionStatus permissionStatus =
+        await Permission.locationWhenInUse.request();
+    if (permissionStatus == PermissionStatus.granted) {
+      setState(() {
+        permissionGranted = true;
+      });
+    } else {
+      setState(() {
+        permissionGranted = false;
+      });
+    }
+  }
+
+  void startTracking() async {
+    if (!(await isGpsEnabled())) {
+      return;
+    }
+    if (!(await isPermissionGranted())) {
+      return;
+    }
+    subscription = location.onLocationChanged.listen((event) {
+      addLocation(event);
+    });
+    setState(() {
+      trackingEnabled = true;
+    });
+  }
+
+  void stopTracking() {
+    subscription.cancel();
+    setState(() {
+      trackingEnabled = false;
+    });
+    clearLocation();
+  }
+
+  void addLocation(l.LocationData data) {
+    setState(() {
+      locations.insert(0, data);
+    });
+  }
+
+  void clearLocation() {
+    setState(() {
+      locations.clear();
+    });
   }
 }
