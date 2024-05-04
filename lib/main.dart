@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:developer';
 
 import 'package:flutter/material.dart';
+import 'package:land_conquer/google_map.dart';
 import 'package:location/location.dart' as l;
 import 'package:permission_handler/permission_handler.dart';
 
@@ -73,47 +74,56 @@ class _HomeScreenState extends State<HomeScreen> {
               gpsEnabled
                   ? const Text("Okey")
                   : ElevatedButton(
-                  onPressed: () {
-                    requestEnableGps();
-                  },
-                  child: const Text("Enable Gps")),
+                      onPressed: () {
+                        requestEnableGps();
+                      },
+                      child: const Text("Enable Gps")),
             ),
             buildListTile(
               "Permission",
               permissionGranted
                   ? const Text("Okey")
                   : ElevatedButton(
-                  onPressed: () {
-                    requestLocationPermission();
-                  },
-                  child: const Text("Request Permission")),
+                      onPressed: () {
+                        requestLocationPermission();
+                      },
+                      child: const Text("Request Permission")),
             ),
             buildListTile(
               "Location",
-              trackingEnabled
-                  ? ElevatedButton(
-                  onPressed: () {
-                    stopTracking();
-                  },
-                  child: const Text("Stop"))
-                  : ElevatedButton(
-                  onPressed: gpsEnabled && permissionGranted
-                      ? () {
-                    startTracking();
-                  }
-                      : null,
-                  child: const Text("Start")),
+              ElevatedButton(
+                child: const Text("위치 트래킹 시작"),
+                onPressed: () {
+                  Navigator.push(context,
+                      MaterialPageRoute(builder: (context) => MapTest()));
+                },
+              )
             ),
-            Expanded(
-                child: ListView.builder(
-                  itemCount: locations.length,
-                  itemBuilder: (context, index) {
-                    return ListTile(
-                      title: Text(
-                          "${locations[index].latitude} ${locations[index].longitude}"),
-                    );
-                  },
-                ))
+
+            //   trackingEnabled
+            //       ? ElevatedButton(
+            //           onPressed: () {
+            //             stopTracking();
+            //           },
+            //           child: const Text("Stop"))
+            //       : ElevatedButton(
+            //           onPressed: gpsEnabled && permissionGranted
+            //               ? () {
+            //                   startTracking();
+            //                 }
+            //               : null,
+            //           child: const Text("Start")),
+            // ),
+            // Expanded(
+            //     child: ListView.builder(
+            //   itemCount: locations.length,
+            //   itemBuilder: (context, index) {
+            //     return ListTile(
+            //       title: Text(
+            //           "${locations[index].latitude} ${locations[index].longitude}"),
+            //     );
+            //   },
+            // ))
           ],
         ),
       ),
@@ -121,9 +131,9 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   ListTile buildListTile(
-      String title,
-      Widget? trailing,
-      ) {
+    String title,
+    Widget? trailing,
+  ) {
     return ListTile(
       dense: true,
       title: Text(title),
