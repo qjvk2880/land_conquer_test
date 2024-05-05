@@ -23,10 +23,33 @@ class _MapTestState extends State<MapTest> {
   // 지도 마커 설정
   late Marker _marker;
 
+  List<List<LatLng>>? polygonData = [];
+
+  void initPolygons() {
+    double initLat = 37.508600;
+    double initLng = 127.041452;
+
+    double tenMeterInLat = 1 / 3600;
+    double tenMeterInLng = 1 / 3600;
+
+    for (var i = 0; i < 25; i++) {
+      for (var j = 0; j < 25; j++) {
+        List<LatLng> latLngList = [];
+
+        latLngList.add(LatLng(initLat + i * tenMeterInLat, initLng + j * tenMeterInLng));
+        latLngList.add(LatLng(initLat + i * tenMeterInLat, initLng + ((j + 1) * tenMeterInLng)));
+        latLngList.add(LatLng(initLat - ((i + 1) * tenMeterInLat), initLng + ((j + 1) * tenMeterInLng)));
+        latLngList.add(LatLng(initLat - ((i + 1) * tenMeterInLat), initLng + j * tenMeterInLng));
+        polygonData?.add(latLngList);
+      }
+    }
+  }
+
   @override
   void initState() {
     super.initState();
     getCurrentLocation();
+    initPolygons();
   }
 
   @override
@@ -42,6 +65,19 @@ class _MapTestState extends State<MapTest> {
           _controller.complete(controller);
         },
         markers: Set.of([_marker]),
+        polygons: Set<Polygon>.of(
+          // for 문을 사용해 여러 개의 폴리곤 생성
+          [
+            for (var i = 0; i < polygonData!.length; i++)
+              Polygon(
+                polygonId: PolygonId('polygon$i'),
+                points: polygonData![i],
+                fillColor: Colors.transparent,
+                strokeColor: Colors.red,
+                strokeWidth: 1,
+              )
+          ],
+        ),
       ),
     );
   }
@@ -62,12 +98,12 @@ class _MapTestState extends State<MapTest> {
       setState(() {});
     }
 
-    location.onLocationChanged.listen((newLoc) {
-      currentLocation = newLoc;
-      _updateMarker(newLoc);
+    location.onLocationChanged.listen(
+      (newLoc) {
+        currentLocation = newLoc;
+        _updateMarker(newLoc);
       },
     );
-
   }
 
   void _updateMarker(LocationData locationData) async {
@@ -79,23 +115,19 @@ class _MapTestState extends State<MapTest> {
         position: LatLng(locationData.latitude!, locationData.longitude!),
       );
 
-      controller.animateCamera(CameraUpdate.newCameraPosition(
-        CameraPosition(
-          target: LatLng(locationData.latitude!, locationData.longitude!),
-          zoom: 14
-        ),
+      controller.animateCamera(CameraUpdate.newLatLng(
+        LatLng(locationData.latitude!, locationData.longitude!),
       ));
     });
   }
 
-  // Location initCurrentLocation() {
-  //   Location location = Location();
-  //   location.getLocation().then(
-  //         (location) {
-  //       currentLocation = location;
-  //     },
-  //   );
-  //   return location;
-  // }
+// Location initCurrentLocation() {
+//   Location location = Location();
+//   location.getLocation().then(
+//         (location) {
+//       currentLocation = location;
+//     },
+//   );
+//   return location;
+// }
 }
-
