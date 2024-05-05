@@ -23,7 +23,7 @@ class _MapTestState extends State<MapTest> {
   // 지도 마커 설정
   late Marker _marker;
 
-  List<List<LatLng>>? polygonData = [];
+  Map<String, Polygon> polygons = {};
 
   void initPolygons() {
     double initLat = 37.508600;
@@ -40,7 +40,16 @@ class _MapTestState extends State<MapTest> {
         latLngList.add(LatLng(initLat + i * tenMeterInLat, initLng + ((j + 1) * tenMeterInLng)));
         latLngList.add(LatLng(initLat - ((i + 1) * tenMeterInLat), initLng + ((j + 1) * tenMeterInLng)));
         latLngList.add(LatLng(initLat - ((i + 1) * tenMeterInLat), initLng + j * tenMeterInLng));
-        polygonData?.add(latLngList);
+
+        polygons["${i}_${j}"] = Polygon(
+            polygonId: PolygonId("${i}_${j}"),
+            points: latLngList,
+            fillColor: Colors.transparent,
+            strokeColor: Colors.red,
+            strokeWidth: 1,
+        );
+
+        // polygonData?.add(latLngList);
       }
     }
   }
@@ -66,17 +75,19 @@ class _MapTestState extends State<MapTest> {
         },
         markers: Set.of([_marker]),
         polygons: Set<Polygon>.of(
-          // for 문을 사용해 여러 개의 폴리곤 생성
-          [
-            for (var i = 0; i < polygonData!.length; i++)
-              Polygon(
-                polygonId: PolygonId('polygon$i'),
-                points: polygonData![i],
-                fillColor: Colors.transparent,
-                strokeColor: Colors.red,
-                strokeWidth: 1,
-              )
-          ],
+          polygons.values
+          //
+          // // for 문을 사용해 여러 개의 폴리곤 생성
+          // [
+          //   for (var i = 0; i < polygonData!.length; i++)
+          //     Polygon(
+          //       polygonId: PolygonId('polygon$i'),
+          //       points: polygonData![i],
+          //       fillColor: Colors.transparent,
+          //       strokeColor: Colors.red,
+          //       strokeWidth: 1,
+          //     )
+          // ],
         ),
       ),
     );
@@ -121,13 +132,4 @@ class _MapTestState extends State<MapTest> {
     });
   }
 
-// Location initCurrentLocation() {
-//   Location location = Location();
-//   location.getLocation().then(
-//         (location) {
-//       currentLocation = location;
-//     },
-//   );
-//   return location;
-// }
 }
