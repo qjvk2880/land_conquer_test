@@ -15,22 +15,18 @@ class _MapTestState extends State<MapTest> {
   LocationData? currentLocation;
   Location location = Location();
 
-  final CameraPosition _initialPosition = CameraPosition(
-    target: LatLng(37.505064, 127.047790),
+  CameraPosition _initialPosition = CameraPosition(
+    target: LatLng(0, 0),
     zoom: 14.4746,
   );
 
   // 지도 마커 설정
-  late Marker _marker = Marker(
-    markerId: MarkerId("currentLocation"),
-    position: LatLng(37.505064, 127.047790),
-  );
+  late Marker _marker;
 
   @override
   void initState() {
     super.initState();
     getCurrentLocation();
-    location = initCurrentLocation();
   }
 
   @override
@@ -51,15 +47,27 @@ class _MapTestState extends State<MapTest> {
   }
 
   void getCurrentLocation() async {
-    Location location = initCurrentLocation();
-    location.onLocationChanged.listen(
-          (newLoc) {
-        setState(() {
-          currentLocation = newLoc;
-          _updateMarker(newLoc);
-        });
+    currentLocation = await location.getLocation();
+    _initialPosition = CameraPosition(
+      target: LatLng(currentLocation!.latitude!, currentLocation!.longitude!),
+      zoom: 14.4746,
+    );
+
+    _marker = Marker(
+      markerId: MarkerId("currentLocation"),
+      position: LatLng(currentLocation!.latitude!, currentLocation!.longitude!),
+    );
+
+    if (mounted) {
+      setState(() {});
+    }
+
+    location.onLocationChanged.listen((newLoc) {
+      currentLocation = newLoc;
+      _updateMarker(newLoc);
       },
     );
+
   }
 
   void _updateMarker(LocationData locationData) async {
@@ -74,20 +82,20 @@ class _MapTestState extends State<MapTest> {
       controller.animateCamera(CameraUpdate.newCameraPosition(
         CameraPosition(
           target: LatLng(locationData.latitude!, locationData.longitude!),
-          zoom: 14,
+          zoom: 14
         ),
       ));
     });
   }
 
-  Location initCurrentLocation() {
-    Location location = Location();
-    location.getLocation().then(
-          (location) {
-        currentLocation = location;
-      },
-    );
-    return location;
-  }
+  // Location initCurrentLocation() {
+  //   Location location = Location();
+  //   location.getLocation().then(
+  //         (location) {
+  //       currentLocation = location;
+  //     },
+  //   );
+  //   return location;
+  // }
 }
 
