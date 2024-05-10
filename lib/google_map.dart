@@ -37,13 +37,14 @@ class _MapTestState extends State<MapTest> {
   void initPolygons() async {
 
     currentLocation = await location.getLocation();
+    double currentLat = currentLocation?.latitude?? 0;
+    double currentLon = currentLocation?.longitude?? 0 ;
 
+    double initLat = currentLat;
+    double initLng = currentLon;
 
-    double initLat = currentLocation?.latitude?? 0;
-    double initLng = currentLocation?.longitude?? 0 ;
-
-    print("${initLat} adfaf");
-    print("${initLng} adfaf");
+    // print("${initLat} adfaf");
+    // print("${initLng} adfaf");
     double tenMeterInLat = 1 / 1800;
     double tenMeterInLng = 1 / 1400;
 
@@ -53,6 +54,7 @@ class _MapTestState extends State<MapTest> {
 
     for (var i = 0; i < 12; i++) {
       for (var j = 0; j < 12; j++) {
+        print("폴리곤 삽입");
         List<LatLng> latLngList = [
           LatLng(initLat - i * tenMeterInLat, initLng + j * tenMeterInLng),
           LatLng(initLat - i * tenMeterInLat, initLng + ((j + 1) * tenMeterInLng)),
@@ -69,12 +71,13 @@ class _MapTestState extends State<MapTest> {
         );// polygonData?.add(latLngList);
       }
     }
-    double currentLat = currentLocation?.latitude?? 0;
-    double currentLon = currentLocation?.longitude?? 0 ;
+
     for (var i = 0; i < 12; i++) {
       for (var j = 0; j < 12; j++) {
         if(_isPointInPolygon(LatLng(currentLat, currentLon), polygonStore["${i}_${j}"]!.points)) {
           polygons["${i}_${j}"] = polygonStore["${i}_${j}"]!.clone();
+          currentPolygonId = "${i}_${j}";
+          print("현재 폴리곤 아이디");
         }
       }
     }
@@ -159,13 +162,20 @@ class _MapTestState extends State<MapTest> {
   }
 
   void changePolygonColor() async {
-    for (var polygon in polygonStore.values) {
-      if(_isPointInPolygon(LatLng(currentLocation!.latitude!, currentLocation!.longitude!), polygon.points)){
-        print('로그');
-        currentPolygonId = polygon.polygonId.value;
+    List<int> dx = [1, 1, 0, -1, -1, -1, 0, 1];
+    List<int> dy = [0, 1, 1, 1, 0, -1, -1, -1];
+    print("폴리곤 컬러 변경");
 
-        Polygon tmp = polygon.clone();
-
+    for(var i = 0; i < 8; i++)  {
+      List<String> split = currentPolygonId.split("_");
+      int currentX = int.parse(split[0]);
+      int currentY = int.parse(split[1]);
+      int newX = currentX + dx[i];
+      int newY = currentY + dy[i];
+      if(_isPointInPolygon(LatLng(currentLocation!.latitude!, currentLocation!.longitude!), polygonStore["${newX}_${newY}"]!.points)) {
+        Polygon tmp = polygonStore["${newX}_${newY}"]!.clone();
+        currentPolygonId = "${newX}_${newY}";
+        print(currentPolygonId);
         setState(() {
           polygons[tmp.polygonId.value] = Polygon(
               polygonId: PolygonId(tmp.polygonId.value),
@@ -174,18 +184,36 @@ class _MapTestState extends State<MapTest> {
               strokeColor: Colors.red,
               strokeWidth: 1
           );
-        }); // Add this line to update the UI
+        });
       }
     }
+    // for (var polygon in polygonStore.values) {
+    //   if(_isPointInPolygon(LatLng(currentLocation!.latitude!, currentLocation!.longitude!), polygon.points)){
+    //     print('로그');
+    //     currentPolygonId = polygon.polygonId.value;
+    //
+    //     Polygon tmp = polygon.clone();
+    //
+    //     setState(() {
+    //       polygons[tmp.polygonId.value] = Polygon(
+    //           polygonId: PolygonId(tmp.polygonId.value),
+    //           points: tmp.points,
+    //           fillColor: Colors.red.withOpacity(0.3),
+    //           strokeColor: Colors.red,
+    //           strokeWidth: 1
+    //       );
+    //     }); // Add this line to update the UI
+    //   }
+    // }
   }
 
   bool _isPointInPolygon(LatLng point, List<LatLng> polygon) {
     print('현재 위치');
     print('${point.latitude} ${point.longitude}');
 
-    return point.latitude < polygon[0].latitude &&
-        point.latitude > polygon[2].latitude &&
-        point.longitude > polygon[0].longitude &&
-        point.longitude < polygon[2].longitude;
+    return point.latitude <= polygon[0].latitude &&
+        point.latitude >= polygon[2].latitude &&
+        point.longitude >= polygon[0].longitude &&
+        point.longitude <= polygon[2].longitude;
   }
 }
