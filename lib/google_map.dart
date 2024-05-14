@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:location/location.dart';
 import 'package:flutter/services.dart' show rootBundle;
 
@@ -13,86 +12,39 @@ class MapTest extends StatefulWidget {
 
 class _MapTestState extends State<MapTest> {
   final Completer<GoogleMapController> _controller = Completer();
+  final Location _location = Location();
   LocationData? currentLocation;
-  Location location = Location();
+  LatLng? _currentLatLng;
 
-  CameraPosition _initialPosition = CameraPosition(
-    target: LatLng(37, 127),
-    zoom: 14.4746,
-  );
+  double tenMeterInLat = 1 / 1800;
+  double tenMeterInLng = 1 / 1400;
 
   // 지도 마커 설정
-  late Marker _marker = Marker(
-    position: LatLng(37, 127),
+  Marker _marker = Marker(
+    position: LatLng(0, 0),
     markerId: MarkerId("currentLocation"),
   );
 
-  Map<String, Polygon> polygonStore = {};
   Map<String, Polygon> polygons = {};
+  Map<String, LatLng> latLngList = {};
 
   late String currentPolygonId;
 
   String? _mapStyle;
 
-  void initPolygons() async {
-
-    currentLocation = await location.getLocation();
-    double currentLat = currentLocation?.latitude?? 0;
-    double currentLon = currentLocation?.longitude?? 0 ;
-
-    double initLat = currentLat;
-    double initLng = currentLon;
-
-    // print("${initLat} adfaf");
-    // print("${initLng} adfaf");
-    double tenMeterInLat = 1 / 1800;
-    double tenMeterInLng = 1 / 1400;
-
-    initLat += 6 * tenMeterInLat;
-    initLng -= 6 * tenMeterInLng;
-
-
-    for (var i = 0; i < 12; i++) {
-      for (var j = 0; j < 12; j++) {
-        print("폴리곤 삽입");
-        List<LatLng> latLngList = [
-          LatLng(initLat - i * tenMeterInLat, initLng + j * tenMeterInLng),
-          LatLng(initLat - i * tenMeterInLat, initLng + ((j + 1) * tenMeterInLng)),
-          LatLng(initLat - ((i + 1) * tenMeterInLat), initLng + ((j + 1) * tenMeterInLng)),
-          LatLng(initLat - ((i + 1) * tenMeterInLat), initLng + j * tenMeterInLng),
-        ];
-
-        polygonStore["${i}_${j}"] = Polygon(
-            polygonId: PolygonId("${i}_${j}"),
-            points: latLngList,
-            fillColor: Colors.transparent,
-            strokeColor: Colors.red,
-            strokeWidth: 1
-        );// polygonData?.add(latLngList);
-      }
-    }
-
-    for (var i = 0; i < 12; i++) {
-      for (var j = 0; j < 12; j++) {
-        if(_isPointInPolygon(LatLng(currentLat, currentLon), polygonStore["${i}_${j}"]!.points)) {
-          polygons["${i}_${j}"] = polygonStore["${i}_${j}"]!.clone();
-          currentPolygonId = "${i}_${j}";
-          print("현재 폴리곤 아이디");
-        }
-      }
-    }
-  }
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    // initPolygons();
     rootBundle.loadString("assets/map_style.txt").then((string){
       _mapStyle = string;
     });
-    print(_mapStyle);
-    getCurrentLocation();
 
+    initLocation().then((value) => {
+      initPolygons(),
+    });
+    trackLocation();
   }
 
   @override
@@ -101,13 +53,21 @@ class _MapTestState extends State<MapTest> {
       appBar: AppBar(
         title: Text("구글 맵"),
       ),
-      body: GoogleMap(
+      body: _isLoading?
+      Center(child:
+        CircularProgressIndicator()
+      )  :
+      GoogleMap(
         mapType: MapType.normal,
-        initialCameraPosition: _initialPosition,
+        // initialCameraPosition: _initialPosition,
+        initialCameraPosition: CameraPosition(
+          target: _currentLatLng!,
+          zoom: 16.0,
+        ),
         onMapCreated: (GoogleMapController controller) {
           _controller.complete(controller);
         },
-        markers: Set.of([_marker]),
+        markers: {_marker},
         polygons: Set<Polygon>.of(
             polygons.values
         ),
@@ -116,34 +76,44 @@ class _MapTestState extends State<MapTest> {
     );
   }
 
-  void getCurrentLocation() async {
-    currentLocation = await location.getLocation();
+  void initPolygons() async {
+    double currentLat = _currentLatLng!.latitude;
+    double currentLon = _currentLatLng!.longitude;
 
-    initPolygons();
+    double initLat = currentLat + 6.5 * tenMeterInLat;
+    double initLng = currentLon - 6.5 * tenMeterInLng;
 
-    changePolygonColor();
-    _initialPosition = CameraPosition(
-      target: LatLng(currentLocation!.latitude!, currentLocation!.longitude!),
-      zoom: 14.4746,
-    );
+    for (var i = 0; i < 12; i++) {
+      for (var j = 0; j < 12; j++) {
+        LatLng topLeftPoint = LatLng(initLat - i * tenMeterInLat, initLng + j * tenMeterInLng);
+        latLngList["${i}_${j}"] = topLeftPoint;
 
-    _marker = Marker(
-      markerId: MarkerId("currentLocation"),
-      position: LatLng(currentLocation!.latitude!, currentLocation!.longitude!),
-    );
-
-    if (mounted) {
-      setState(() {});
+        if (_isPointInRectangle(LatLng(currentLat, currentLon), _getRectangle(topLeftPoint: topLeftPoint))) {
+          currentPolygonId = "${i}_${j}";
+          setState(() {
+            polygons[currentPolygonId] = _createPolygon(currentPolygonId);
+          });
+        }
+      }
     }
+  }
 
-    location.onLocationChanged.listen(
+  Future<void> initLocation() async {
+    currentLocation = await _location.getLocation();
+    setState(() {
+      _currentLatLng = LatLng(currentLocation!.latitude!, currentLocation!.longitude!);
+      _isLoading = false;
+    });
+  }
+
+  void trackLocation() async {
+    _location.onLocationChanged.listen(
           (newLoc) {
         currentLocation = newLoc;
         _updateMarker(newLoc);
-        changePolygonColor();
+        _searchNearByPixels();
       },
     );
-
   }
 
   void _updateMarker(LocationData locationData) async {
@@ -161,59 +131,49 @@ class _MapTestState extends State<MapTest> {
     });
   }
 
-  void changePolygonColor() async {
+  void _searchNearByPixels() async {
     List<int> dx = [1, 1, 0, -1, -1, -1, 0, 1];
     List<int> dy = [0, 1, 1, 1, 0, -1, -1, -1];
-    print("폴리곤 컬러 변경");
 
     for(var i = 0; i < 8; i++)  {
       List<String> split = currentPolygonId.split("_");
-      int currentX = int.parse(split[0]);
-      int currentY = int.parse(split[1]);
-      int newX = currentX + dx[i];
-      int newY = currentY + dy[i];
-      if(_isPointInPolygon(LatLng(currentLocation!.latitude!, currentLocation!.longitude!), polygonStore["${newX}_${newY}"]!.points)) {
-        Polygon tmp = polygonStore["${newX}_${newY}"]!.clone();
-        currentPolygonId = "${newX}_${newY}";
-        print(currentPolygonId);
+      String searchingPolygonId = "${int.parse(split[0]) + dx[i]}_${int.parse(split[1]) + dy[i]}";
+
+      List<LatLng> rectangle = _getRectangle(topLeftPoint: latLngList[searchingPolygonId]!);
+      if(_isPointInRectangle(LatLng(currentLocation!.latitude!, currentLocation!.longitude!), rectangle)) {
+        currentPolygonId = searchingPolygonId;
         setState(() {
-          polygons[tmp.polygonId.value] = Polygon(
-              polygonId: PolygonId(tmp.polygonId.value),
-              points: tmp.points,
-              fillColor: Colors.red.withOpacity(0.3),
-              strokeColor: Colors.red,
-              strokeWidth: 1
-          );
+          polygons[currentPolygonId] = _createPolygon(currentPolygonId);
         });
       }
     }
-    // for (var polygon in polygonStore.values) {
-    //   if(_isPointInPolygon(LatLng(currentLocation!.latitude!, currentLocation!.longitude!), polygon.points)){
-    //     print('로그');
-    //     currentPolygonId = polygon.polygonId.value;
-    //
-    //     Polygon tmp = polygon.clone();
-    //
-    //     setState(() {
-    //       polygons[tmp.polygonId.value] = Polygon(
-    //           polygonId: PolygonId(tmp.polygonId.value),
-    //           points: tmp.points,
-    //           fillColor: Colors.red.withOpacity(0.3),
-    //           strokeColor: Colors.red,
-    //           strokeWidth: 1
-    //       );
-    //     }); // Add this line to update the UI
-    //   }
-    // }
   }
 
-  bool _isPointInPolygon(LatLng point, List<LatLng> polygon) {
-    print('현재 위치');
-    print('${point.latitude} ${point.longitude}');
+  Polygon _createPolygon(String polygonId){
+    List<LatLng> rectangle = _getRectangle(topLeftPoint: latLngList[polygonId]!);
+    return Polygon(
+        polygonId: PolygonId(polygonId),
+        points: rectangle,
+        fillColor: Colors.red.withOpacity(0.3),
+        strokeColor: Colors.red,
+        strokeWidth: 1
+    );
+  }
 
+  bool _isPointInRectangle(LatLng point, List<LatLng> polygon) {
     return point.latitude <= polygon[0].latitude &&
         point.latitude >= polygon[2].latitude &&
         point.longitude >= polygon[0].longitude &&
         point.longitude <= polygon[2].longitude;
   }
+
+  List<LatLng> _getRectangle({required LatLng topLeftPoint}) {
+    return List<LatLng>.of({
+      LatLng(topLeftPoint.latitude, topLeftPoint.longitude),
+      LatLng(topLeftPoint.latitude, topLeftPoint.longitude + tenMeterInLng),
+      LatLng(topLeftPoint.latitude - tenMeterInLat, topLeftPoint.longitude + tenMeterInLng),
+      LatLng(topLeftPoint.latitude - tenMeterInLat, topLeftPoint.longitude),
+    });
+  }
+
 }

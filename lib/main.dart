@@ -93,10 +93,10 @@ class _HomeScreenState extends State<HomeScreen> {
               "Location",
               ElevatedButton(
                 child: const Text("위치 트래킹 시작"),
-                onPressed: () {
+                onPressed: gpsEnabled && permissionGranted ? () {
                   Navigator.push(context,
                       MaterialPageRoute(builder: (context) => MapTest()));
-                },
+                } : null,
               )
             ),
 
