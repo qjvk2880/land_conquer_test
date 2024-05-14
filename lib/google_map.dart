@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:location/location.dart';
 import 'package:flutter/services.dart' show rootBundle;
 
@@ -20,15 +19,12 @@ class _MapTestState extends State<MapTest> {
   double tenMeterInLat = 1 / 1800;
   double tenMeterInLng = 1 / 1400;
 
-  late CameraPosition _initialPosition;
-
   // 지도 마커 설정
   late Marker _marker = Marker(
     position: LatLng(0, 0),
     markerId: MarkerId("currentLocation"),
   );
 
-  Map<String, Polygon> polygonStore = {};
   Map<String, Polygon> polygons = {};
   Map<String, LatLng> latLngList = {};
 
@@ -62,31 +58,17 @@ class _MapTestState extends State<MapTest> {
     }
   }
 
-  void drawPolygon() {
-    double latitude = latLngList[currentPolygonId]!.latitude;
-    double longitude = latLngList[currentPolygonId]!.longitude;
-
-    polygons[currentPolygonId] = Polygon(
-      polygonId: PolygonId(currentPolygonId),
-      points: _getRectangle(topLeftPoint: LatLng(latitude, longitude)),
-      fillColor: Colors.red.withOpacity(0.3),
-      strokeColor: Colors.red,
-      strokeWidth: 1
-    );
-  }
-
   @override
   void initState() {
     super.initState();
     rootBundle.loadString("assets/map_style.txt").then((string){
       _mapStyle = string;
     });
-    // print(_mapStyle);
+
     initLocation().then((value) => {
       initPolygons(),
     });
     trackLocation();
-
   }
 
   @override
