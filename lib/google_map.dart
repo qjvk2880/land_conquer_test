@@ -38,19 +38,14 @@ class _MapTestState extends State<MapTest> {
     double currentLat = _currentLatLng!.latitude;
     double currentLon = _currentLatLng!.longitude;
 
-    print("위도 ${currentLat}");
-    print("경도 ${currentLon}");
-    double initLat = currentLat;
-    double initLng = currentLon;
-
-    initLat += 6.5 * tenMeterInLat;
-    initLng -= 6.5 * tenMeterInLng;
+    double initLat = currentLat + 6.5 * tenMeterInLat;
+    double initLng = currentLon - 6.5 * tenMeterInLng;
 
     for (var i = 0; i < 12; i++) {
       for (var j = 0; j < 12; j++) {
         LatLng topLeftPoint = LatLng(initLat - i * tenMeterInLat, initLng + j * tenMeterInLng);
-
         latLngList["${i}_${j}"] = topLeftPoint;
+
         if (_isPointInRectangle(LatLng(currentLat, currentLon), _getRectangle(topLeftPoint: topLeftPoint))) {
           currentPolygonId = "${i}_${j}";
         }
@@ -145,14 +140,11 @@ class _MapTestState extends State<MapTest> {
 
     for(var i = 0; i < 8; i++)  {
       List<String> split = currentPolygonId.split("_");
-      int currentX = int.parse(split[0]);
-      int currentY = int.parse(split[1]);
-      int newX = currentX + dx[i];
-      int newY = currentY + dy[i];
+      String searchingPolygonId = "${int.parse(split[0]) + dx[i]}_${int.parse(split[1]) + dy[i]}";
 
-      List<LatLng> rectangle = _getRectangle(topLeftPoint: latLngList["${newX}_${newY}"]!);
+      List<LatLng> rectangle = _getRectangle(topLeftPoint: latLngList[searchingPolygonId]!);
       if(_isPointInRectangle(LatLng(currentLocation!.latitude!, currentLocation!.longitude!), rectangle)) {
-        currentPolygonId = "${newX}_${newY}";
+        currentPolygonId = searchingPolygonId;
         setState(() {
           polygons[currentPolygonId] = _createPolygon(currentPolygonId);
         });
