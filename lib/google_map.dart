@@ -145,18 +145,7 @@ class _MapTestState extends State<MapTest> {
       print("현재 폴리곤아이디 ${currentPolygonId}");
       print("${latLngList[currentPolygonId]!}");
 
-      polygons[currentPolygonId] = Polygon(
-          polygonId: PolygonId(currentPolygonId),
-          points: _getRectangle(
-              topLeftPoint: LatLng(
-                  latLngList[currentPolygonId]!.latitude,
-                  latLngList[currentPolygonId]!.longitude
-              )
-          ),
-          fillColor: Colors.red.withOpacity(0.3),
-          strokeColor: Colors.red,
-          strokeWidth: 1
-      );
+      polygons[currentPolygonId] = _createPolygon(currentPolygonId);
 
       print("초기 폴리곤 ${polygons[currentPolygonId]}");
       _marker = Marker(
@@ -185,16 +174,21 @@ class _MapTestState extends State<MapTest> {
       if(_isPointInRectangle(LatLng(currentLocation!.latitude!, currentLocation!.longitude!), rectangle)) {
         currentPolygonId = "${newX}_${newY}";
         setState(() {
-          polygons[currentPolygonId] = Polygon(
-              polygonId: PolygonId(currentPolygonId),
-              points: rectangle,
-              fillColor: Colors.red.withOpacity(0.3),
-              strokeColor: Colors.red,
-              strokeWidth: 1
-          );
+          polygons[currentPolygonId] = _createPolygon(currentPolygonId);
         });
       }
     }
+  }
+
+  Polygon _createPolygon(String polygonId){
+    List<LatLng> rectangle = _getRectangle(topLeftPoint: latLngList[polygonId]!);
+    return Polygon(
+        polygonId: PolygonId(polygonId),
+        points: rectangle,
+        fillColor: Colors.red.withOpacity(0.3),
+        strokeColor: Colors.red,
+        strokeWidth: 1
+    );
   }
 
   bool _isPointInRectangle(LatLng point, List<LatLng> polygon) {
