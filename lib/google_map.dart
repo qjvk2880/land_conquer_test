@@ -13,7 +13,7 @@ class MapTest extends StatefulWidget {
 class _MapTestState extends State<MapTest> {
   final Completer<GoogleMapController> _controller = Completer();
   LocationData? currentLocation;
-  Location location = Location();
+  final Location _location = Location();
   LatLng? _currentLatLng;
 
   double tenMeterInLat = 1 / 1800;
@@ -101,9 +101,7 @@ class _MapTestState extends State<MapTest> {
   }
 
   Future<void> initLocation() async {
-    print("위치 초기화");
-    currentLocation = await location.getLocation();
-    print("위치 초기화 완료");
+    currentLocation = await _location.getLocation();
     setState(() {
       _currentLatLng = LatLng(currentLocation!.latitude!, currentLocation!.longitude!);
       _isLoading = false;
@@ -111,7 +109,7 @@ class _MapTestState extends State<MapTest> {
   }
 
   void trackLocation() async {
-    location.onLocationChanged.listen(
+    _location.onLocationChanged.listen(
           (newLoc) {
         currentLocation = newLoc;
         _updateMarker(newLoc);
