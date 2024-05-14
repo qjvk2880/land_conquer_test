@@ -20,7 +20,7 @@ class _MapTestState extends State<MapTest> {
   double tenMeterInLng = 1 / 1400;
 
   // 지도 마커 설정
-  late Marker _marker = Marker(
+  Marker _marker = Marker(
     position: LatLng(0, 0),
     markerId: MarkerId("currentLocation"),
   );
