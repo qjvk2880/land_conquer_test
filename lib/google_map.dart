@@ -12,8 +12,8 @@ class MapTest extends StatefulWidget {
 
 class _MapTestState extends State<MapTest> {
   final Completer<GoogleMapController> _controller = Completer();
-  LocationData? currentLocation;
   final Location _location = Location();
+  LocationData? currentLocation;
   LatLng? _currentLatLng;
 
   double tenMeterInLat = 1 / 1800;
@@ -33,25 +33,6 @@ class _MapTestState extends State<MapTest> {
   String? _mapStyle;
 
   bool _isLoading = true;
-
-  void initPolygons() async {
-    double currentLat = _currentLatLng!.latitude;
-    double currentLon = _currentLatLng!.longitude;
-
-    double initLat = currentLat + 6.5 * tenMeterInLat;
-    double initLng = currentLon - 6.5 * tenMeterInLng;
-
-    for (var i = 0; i < 12; i++) {
-      for (var j = 0; j < 12; j++) {
-        LatLng topLeftPoint = LatLng(initLat - i * tenMeterInLat, initLng + j * tenMeterInLng);
-        latLngList["${i}_${j}"] = topLeftPoint;
-
-        if (_isPointInRectangle(LatLng(currentLat, currentLon), _getRectangle(topLeftPoint: topLeftPoint))) {
-          currentPolygonId = "${i}_${j}";
-        }
-      }
-    }
-  }
 
   @override
   void initState() {
@@ -95,6 +76,28 @@ class _MapTestState extends State<MapTest> {
     );
   }
 
+  void initPolygons() async {
+    double currentLat = _currentLatLng!.latitude;
+    double currentLon = _currentLatLng!.longitude;
+
+    double initLat = currentLat + 6.5 * tenMeterInLat;
+    double initLng = currentLon - 6.5 * tenMeterInLng;
+
+    for (var i = 0; i < 12; i++) {
+      for (var j = 0; j < 12; j++) {
+        LatLng topLeftPoint = LatLng(initLat - i * tenMeterInLat, initLng + j * tenMeterInLng);
+        latLngList["${i}_${j}"] = topLeftPoint;
+
+        if (_isPointInRectangle(LatLng(currentLat, currentLon), _getRectangle(topLeftPoint: topLeftPoint))) {
+          currentPolygonId = "${i}_${j}";
+          setState(() {
+            polygons[currentPolygonId] = _createPolygon(currentPolygonId);
+          });
+        }
+      }
+    }
+  }
+
   Future<void> initLocation() async {
     currentLocation = await _location.getLocation();
     setState(() {
@@ -117,12 +120,6 @@ class _MapTestState extends State<MapTest> {
     final GoogleMapController controller = await _controller.future;
 
     setState(() {
-      print("현재 폴리곤아이디 ${currentPolygonId}");
-      print("${latLngList[currentPolygonId]!}");
-
-      polygons[currentPolygonId] = _createPolygon(currentPolygonId);
-
-      print("초기 폴리곤 ${polygons[currentPolygonId]}");
       _marker = Marker(
         markerId: MarkerId("currentLocation"),
         position: LatLng(locationData.latitude!, locationData.longitude!),
