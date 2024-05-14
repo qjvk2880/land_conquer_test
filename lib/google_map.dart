@@ -124,7 +124,6 @@ class _MapTestState extends State<MapTest> {
     print("위치 초기화 완료");
     setState(() {
       _currentLatLng = LatLng(currentLocation!.latitude!, currentLocation!.longitude!);
-      print(_currentLatLng);
       _isLoading = false;
     });
   }
@@ -134,7 +133,7 @@ class _MapTestState extends State<MapTest> {
           (newLoc) {
         currentLocation = newLoc;
         _updateMarker(newLoc);
-        // changePolygonColor();
+        changePolygonColor();
       },
     );
   }
@@ -182,14 +181,13 @@ class _MapTestState extends State<MapTest> {
       int newX = currentX + dx[i];
       int newY = currentY + dy[i];
 
-      if(_isPointInPolygon(LatLng(currentLocation!.latitude!, currentLocation!.longitude!), polygonStore["${newX}_${newY}"]!.points)) {
-        Polygon tmp = polygonStore["${newX}_${newY}"]!.clone();
       List<LatLng> rectangle = _getRectangle(topLeftPoint: latLngList["${newX}_${newY}"]!);
+      if(_isPointInRectangle(LatLng(currentLocation!.latitude!, currentLocation!.longitude!), rectangle)) {
         currentPolygonId = "${newX}_${newY}";
         setState(() {
-          polygons[tmp.polygonId.value] = Polygon(
-              polygonId: PolygonId(tmp.polygonId.value),
-              points: tmp.points,
+          polygons[currentPolygonId] = Polygon(
+              polygonId: PolygonId(currentPolygonId),
+              points: rectangle,
               fillColor: Colors.red.withOpacity(0.3),
               strokeColor: Colors.red,
               strokeWidth: 1
@@ -199,7 +197,7 @@ class _MapTestState extends State<MapTest> {
     }
   }
 
-  bool _isPointInPolygon(LatLng point, List<LatLng> polygon) {
+  bool _isPointInRectangle(LatLng point, List<LatLng> polygon) {
     return point.latitude <= polygon[0].latitude &&
         point.latitude >= polygon[2].latitude &&
         point.longitude >= polygon[0].longitude &&
