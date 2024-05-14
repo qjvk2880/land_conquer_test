@@ -56,7 +56,6 @@ class _MapTestState extends State<MapTest> {
         LatLng topLeftPoint = LatLng(initLat - i * tenMeterInLat, initLng + j * tenMeterInLng);
 
         latLngList["${i}_${j}"] = topLeftPoint;
-
         if (_isPointInPolygon(LatLng(currentLat, currentLon), getRectangle(topLeftPoint: topLeftPoint))) {
           currentPolygonId = "${i}_${j}";
         }
