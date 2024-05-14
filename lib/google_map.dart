@@ -108,7 +108,7 @@ class _MapTestState extends State<MapTest> {
           (newLoc) {
         currentLocation = newLoc;
         _updateMarker(newLoc);
-        changePolygonColor();
+        _searchNearByPixels();
       },
     );
   }
@@ -134,7 +134,7 @@ class _MapTestState extends State<MapTest> {
     });
   }
 
-  void changePolygonColor() async {
+  void _searchNearByPixels() async {
     List<int> dx = [1, 1, 0, -1, -1, -1, 0, 1];
     List<int> dy = [0, 1, 1, 1, 0, -1, -1, -1];
 
