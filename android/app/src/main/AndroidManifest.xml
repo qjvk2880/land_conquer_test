@@ -4,9 +4,11 @@
     <application
         android:label="land_conquer"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:enableOnBackInvokedCallback="true"
+        >
         <meta-data android:name="com.google.android.geo.API_KEY"
-            android:value="AIzaSyCq_qnq4dHPjiXpvS_dd7ErubIAsLEAliY"/>
+            android:value="AIzaSyCNnoWehGJ64FdpT-y-cQxKHwdoKl9qjaU"/>
         <activity
             android:name=".MainActivity"
             android:exported="true"

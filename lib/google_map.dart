@@ -50,7 +50,6 @@ class _MapTestState extends State<MapTest> {
     initLat += 6.5 * tenMeterInLat;
     initLng -= 6.5 * tenMeterInLng;
 
-
     for (var i = 0; i < 12; i++) {
       for (var j = 0; j < 12; j++) {
         LatLng topLeftPoint = LatLng(initLat - i * tenMeterInLat, initLng + j * tenMeterInLng);
@@ -67,16 +66,9 @@ class _MapTestState extends State<MapTest> {
     double latitude = latLngList[currentPolygonId]!.latitude;
     double longitude = latLngList[currentPolygonId]!.longitude;
 
-    List<LatLng> rectangle = [
-      LatLng(latitude, longitude),
-      LatLng(latitude, longitude + tenMeterInLng),
-      LatLng(latitude - tenMeterInLat, longitude + tenMeterInLng),
-      LatLng(latitude - tenMeterInLat, longitude),
-    ];
-
     polygons[currentPolygonId] = Polygon(
       polygonId: PolygonId(currentPolygonId),
-      points: rectangle,
+      points: getRectangle(topLeftPoint: LatLng(latitude, longitude)),
       fillColor: Colors.red.withOpacity(0.3),
       strokeColor: Colors.red,
       strokeWidth: 1
@@ -129,8 +121,10 @@ class _MapTestState extends State<MapTest> {
   Future<void> initLocation() async {
     print("위치 초기화");
     currentLocation = await location.getLocation();
+    print("위치 초기화 완료");
     setState(() {
       _currentLatLng = LatLng(currentLocation!.latitude!, currentLocation!.longitude!);
+      print(_currentLatLng);
       _isLoading = false;
     });
   }
@@ -151,15 +145,15 @@ class _MapTestState extends State<MapTest> {
     setState(() {
       print("현재 폴리곤아이디 ${currentPolygonId}");
       print("${latLngList[currentPolygonId]!}");
-      List<LatLng> rectangle = [
-        LatLng(latLngList[currentPolygonId]!.latitude, latLngList[currentPolygonId]!.longitude),
-        LatLng(latLngList[currentPolygonId]!.latitude, latLngList[currentPolygonId]!.longitude + tenMeterInLng),
-        LatLng(latLngList[currentPolygonId]!.latitude - tenMeterInLat, latLngList[currentPolygonId]!.longitude + tenMeterInLng),
-        LatLng(latLngList[currentPolygonId]!.latitude - tenMeterInLat, latLngList[currentPolygonId]!.longitude),
-      ];
+
       polygons[currentPolygonId] = Polygon(
           polygonId: PolygonId(currentPolygonId),
-          points: rectangle,
+          points: getRectangle(
+              topLeftPoint: LatLng(
+                  latLngList[currentPolygonId]!.latitude,
+                  latLngList[currentPolygonId]!.longitude
+              )
+          ),
           fillColor: Colors.red.withOpacity(0.3),
           strokeColor: Colors.red,
           strokeWidth: 1
