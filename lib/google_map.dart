@@ -55,7 +55,7 @@ class _MapTestState extends State<MapTest> {
         LatLng topLeftPoint = LatLng(initLat - i * tenMeterInLat, initLng + j * tenMeterInLng);
 
         latLngList["${i}_${j}"] = topLeftPoint;
-        if (_isPointInPolygon(LatLng(currentLat, currentLon), getRectangle(topLeftPoint: topLeftPoint))) {
+        if (_isPointInRectangle(LatLng(currentLat, currentLon), _getRectangle(topLeftPoint: topLeftPoint))) {
           currentPolygonId = "${i}_${j}";
         }
       }
@@ -68,7 +68,7 @@ class _MapTestState extends State<MapTest> {
 
     polygons[currentPolygonId] = Polygon(
       polygonId: PolygonId(currentPolygonId),
-      points: getRectangle(topLeftPoint: LatLng(latitude, longitude)),
+      points: _getRectangle(topLeftPoint: LatLng(latitude, longitude)),
       fillColor: Colors.red.withOpacity(0.3),
       strokeColor: Colors.red,
       strokeWidth: 1
@@ -148,7 +148,7 @@ class _MapTestState extends State<MapTest> {
 
       polygons[currentPolygonId] = Polygon(
           polygonId: PolygonId(currentPolygonId),
-          points: getRectangle(
+          points: _getRectangle(
               topLeftPoint: LatLng(
                   latLngList[currentPolygonId]!.latitude,
                   latLngList[currentPolygonId]!.longitude
@@ -184,8 +184,8 @@ class _MapTestState extends State<MapTest> {
 
       if(_isPointInPolygon(LatLng(currentLocation!.latitude!, currentLocation!.longitude!), polygonStore["${newX}_${newY}"]!.points)) {
         Polygon tmp = polygonStore["${newX}_${newY}"]!.clone();
+      List<LatLng> rectangle = _getRectangle(topLeftPoint: latLngList["${newX}_${newY}"]!);
         currentPolygonId = "${newX}_${newY}";
-        print(currentPolygonId);
         setState(() {
           polygons[tmp.polygonId.value] = Polygon(
               polygonId: PolygonId(tmp.polygonId.value),
@@ -206,7 +206,7 @@ class _MapTestState extends State<MapTest> {
         point.longitude <= polygon[2].longitude;
   }
 
-  List<LatLng> getRectangle({required LatLng topLeftPoint}) {
+  List<LatLng> _getRectangle({required LatLng topLeftPoint}) {
     return List<LatLng>.of({
       LatLng(topLeftPoint.latitude, topLeftPoint.longitude),
       LatLng(topLeftPoint.latitude, topLeftPoint.longitude + tenMeterInLng),
