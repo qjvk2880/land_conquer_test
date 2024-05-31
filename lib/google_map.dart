@@ -18,7 +18,6 @@ class _MapTestState extends State<MapTest> {
   final Completer<GoogleMapController> _controller = Completer();
   final Location _location = Location();
   LocationData? currentLocation;
-  LatLng? _currentLatLng;
   late StreamSubscription<LocationData> locationSubscription;
   Map<int, Color> userColor = {
     1 : Colors.red,
@@ -74,7 +73,8 @@ class _MapTestState extends State<MapTest> {
         mapType: MapType.normal,
         // initialCameraPosition: _initialPosition,
         initialCameraPosition: CameraPosition(
-          target: _currentLatLng!,
+          // target: _currentLatLng!,
+          target: LatLng(currentLocation!.latitude!, currentLocation!.longitude!),
           zoom: 16.0,
         ),
         onMapCreated: (GoogleMapController controller) {
@@ -90,8 +90,8 @@ class _MapTestState extends State<MapTest> {
   }
 
   void initPolygons() async {
-    double currentLat = _currentLatLng!.latitude;
-    double currentLon = _currentLatLng!.longitude;
+    double currentLat = currentLocation!.latitude!;
+    double currentLon = currentLocation!.longitude!;
 
     double initLat = currentLat + 6.5 * tenMeterInLat;
     double initLng = currentLon - 6.5 * tenMeterInLng;
@@ -114,7 +114,6 @@ class _MapTestState extends State<MapTest> {
   Future<void> initLocation() async {
     currentLocation = await _location.getLocation();
     setState(() {
-      _currentLatLng = LatLng(currentLocation!.latitude!, currentLocation!.longitude!);
       _isLoading = false;
     });
   }
