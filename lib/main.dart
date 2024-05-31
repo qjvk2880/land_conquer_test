@@ -40,9 +40,6 @@ class _HomeScreenState extends State<HomeScreen> {
   bool permissionGranted = false;
   l.Location location = l.Location();
   late StreamSubscription subscription;
-  bool trackingEnabled = false;
-
-  List<l.LocationData> locations = [];
 
   @override
   void initState() {
@@ -52,7 +49,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   void dispose() {
-    stopTracking();
     super.dispose();
   }
 
@@ -100,30 +96,6 @@ class _HomeScreenState extends State<HomeScreen> {
               )
             ),
 
-            //   trackingEnabled
-            //       ? ElevatedButton(
-            //           onPressed: () {
-            //             stopTracking();
-            //           },
-            //           child: const Text("Stop"))
-            //       : ElevatedButton(
-            //           onPressed: gpsEnabled && permissionGranted
-            //               ? () {
-            //                   startTracking();
-            //                 }
-            //               : null,
-            //           child: const Text("Start")),
-            // ),
-            // Expanded(
-            //     child: ListView.builder(
-            //   itemCount: locations.length,
-            //   itemBuilder: (context, index) {
-            //     return ListTile(
-            //       title: Text(
-            //           "${locations[index].latitude} ${locations[index].longitude}"),
-            //     );
-            //   },
-            // ))
           ],
         ),
       ),
@@ -189,40 +161,5 @@ class _HomeScreenState extends State<HomeScreen> {
         permissionGranted = false;
       });
     }
-  }
-
-  void startTracking() async {
-    if (!(await isGpsEnabled())) {
-      return;
-    }
-    if (!(await isPermissionGranted())) {
-      return;
-    }
-    subscription = location.onLocationChanged.listen((event) {
-      addLocation(event);
-    });
-    setState(() {
-      trackingEnabled = true;
-    });
-  }
-
-  void stopTracking() {
-    subscription.cancel();
-    setState(() {
-      trackingEnabled = false;
-    });
-    clearLocation();
-  }
-
-  void addLocation(l.LocationData data) {
-    setState(() {
-      locations.insert(0, data);
-    });
-  }
-
-  void clearLocation() {
-    setState(() {
-      locations.clear();
-    });
   }
 }
