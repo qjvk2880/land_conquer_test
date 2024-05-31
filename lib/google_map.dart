@@ -1,7 +1,10 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:land_conquer/models/pixel.dart';
+import 'package:land_conquer/service/pixel_service.dart';
 import 'package:location/location.dart';
 import 'package:flutter/services.dart' show rootBundle;
 
@@ -19,6 +22,7 @@ class _MapTestState extends State<MapTest> {
   final Location _location = Location();
   LocationData? currentLocation;
   late StreamSubscription<LocationData> locationSubscription;
+  final PixelService pixelService = PixelService();
   Map<int, Color> userColor = {
     1 : Colors.red,
     2 : Colors.blue,
@@ -38,6 +42,7 @@ class _MapTestState extends State<MapTest> {
 
   Map<String, Polygon> polygons = {};
   Map<String, LatLng> latLngList = {};
+  late List<Pixel> pixelList;
 
   late String currentPolygonId;
 
@@ -45,8 +50,13 @@ class _MapTestState extends State<MapTest> {
 
   bool _isLoading = true;
 
+  late Timer timer;
+
   @override
   void initState() {
+    // WidgetsBinding.instance.addPostFrameCallback((_) {
+    //   print(pixelService.getPixels());
+    // });
     print("current userId : ${widget.userId}");
     super.initState();
     rootBundle.loadString("assets/map_style.txt").then((string){
@@ -57,6 +67,7 @@ class _MapTestState extends State<MapTest> {
       initPolygons(),
     });
     trackLocation();
+    trackPixelOwner();
   }
 
   @override
@@ -71,9 +82,7 @@ class _MapTestState extends State<MapTest> {
       )  :
       GoogleMap(
         mapType: MapType.normal,
-        // initialCameraPosition: _initialPosition,
         initialCameraPosition: CameraPosition(
-          // target: _currentLatLng!,
           target: LatLng(currentLocation!.latitude!, currentLocation!.longitude!),
           zoom: 16.0,
         ),
@@ -89,26 +98,41 @@ class _MapTestState extends State<MapTest> {
     );
   }
 
+  void _updatePixelsColor() async {
+    for (int i = 0; i < 144; i++) {
+      Pixel currentPixel = pixelList[i];
+      String pixelId = "${pixelList[i].x}_${pixelList[i].y}";
+
+      if (currentPixel.userId != null) {
+        setState(() {
+          polygons[pixelId] = _createPolygon(pixelId, currentPixel.userId!);
+        });
+      }
+    }
+  }
+
+
   void initPolygons() async {
+    pixelList = await pixelService.getPixels();
+    print(pixelList);
     double currentLat = currentLocation!.latitude!;
     double currentLon = currentLocation!.longitude!;
 
-    double initLat = currentLat + 6.5 * tenMeterInLat;
-    double initLng = currentLon - 6.5 * tenMeterInLng;
+    for (int i = 0; i < 144; i++) {
+      Pixel currentPixel = pixelList[i];
+      LatLng topLeftPoint = LatLng(currentPixel.lat, currentPixel.lon);
+      latLngList["${currentPixel.x}_${currentPixel.y}"] = topLeftPoint;
 
-    for (var i = 0; i < 12; i++) {
-      for (var j = 0; j < 12; j++) {
-        LatLng topLeftPoint = LatLng(initLat - i * tenMeterInLat, initLng + j * tenMeterInLng);
-        latLngList["${i}_${j}"] = topLeftPoint;
-
-        if (_isPointInRectangle(LatLng(currentLat, currentLon), _getRectangle(topLeftPoint: topLeftPoint))) {
-          currentPolygonId = "${i}_${j}";
-          setState(() {
-            polygons[currentPolygonId] = _createPolygon(currentPolygonId);
-          });
-        }
+      if (_isPointInRectangle(LatLng(currentLat, currentLon), _getRectangle(topLeftPoint: topLeftPoint))) {
+        currentPolygonId = "${currentPixel.x}_${currentPixel.y}";
+        setState(() {
+          polygons[currentPolygonId] = _createPolygon(currentPolygonId, widget.userId);
+          pixelService.updatePixel(currentPixel.x, currentPixel.y, widget.userId);
+        });
       }
     }
+
+    _updatePixelsColor();
   }
 
   Future<void> initLocation() async {
@@ -127,6 +151,7 @@ class _MapTestState extends State<MapTest> {
       },
     );
   }
+
 
   void _updateMarker(LocationData locationData) async {
     final GoogleMapController controller = await _controller.future;
@@ -149,25 +174,27 @@ class _MapTestState extends State<MapTest> {
 
     for(var i = 0; i < 8; i++)  {
       List<String> split = currentPolygonId.split("_");
-      String searchingPolygonId = "${int.parse(split[0]) + dx[i]}_${int.parse(split[1]) + dy[i]}";
+      int newX = int.parse(split[0]) + dx[i];
+      int newY = int.parse(split[1]) + dy[i];
 
-      List<LatLng> rectangle = _getRectangle(topLeftPoint: latLngList[searchingPolygonId]!);
+      List<LatLng> rectangle = _getRectangle(topLeftPoint: latLngList["${newX}_${newY}"]!);
       if(_isPointInRectangle(LatLng(currentLocation!.latitude!, currentLocation!.longitude!), rectangle)) {
-        currentPolygonId = searchingPolygonId;
+        currentPolygonId = "${newX}_${newY}";
         setState(() {
-          polygons[currentPolygonId] = _createPolygon(currentPolygonId);
+          polygons[currentPolygonId] = _createPolygon(currentPolygonId, widget.userId);
+          pixelService.updatePixel(newX, newY, widget.userId);
         });
       }
     }
   }
 
-  Polygon _createPolygon(String polygonId){
+  Polygon _createPolygon(String polygonId, int userId){
     List<LatLng> rectangle = _getRectangle(topLeftPoint: latLngList[polygonId]!);
     return Polygon(
         polygonId: PolygonId(polygonId),
         points: rectangle,
-        fillColor: userColor[widget.userId]!.withOpacity(0.3),
-        strokeColor: userColor[widget.userId]!,
+        fillColor: userColor[userId]!.withOpacity(0.3),
+        strokeColor: userColor[userId]!,
         strokeWidth: 1
     );
   }
@@ -192,6 +219,14 @@ class _MapTestState extends State<MapTest> {
   void dispose(){
     _controller.future.then((controller) => controller.dispose());
     locationSubscription.cancel();
+    timer.cancel();
     super.dispose();
+  }
+
+  void trackPixelOwner() async {
+    timer = Timer.periodic(const Duration(seconds: 10), (timer) async {
+      pixelList = await pixelService.getPixels();
+      _updatePixelsColor();
+    });
   }
 }
