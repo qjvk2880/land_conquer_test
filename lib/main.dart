@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:developer';
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:land_conquer/google_map.dart';
 import 'package:location/location.dart' as l;
@@ -40,6 +41,16 @@ class _HomeScreenState extends State<HomeScreen> {
   bool permissionGranted = false;
   l.Location location = l.Location();
   late StreamSubscription subscription;
+
+  Map<int, MaterialColor> userColor = {
+    1 : Colors.red,
+    2 : Colors.blue,
+    3 : Colors.green,
+    4 : Colors.yellow,
+    5 : Colors.deepPurple
+  };
+
+  int currentUserId = 1;
 
   @override
   void initState() {
@@ -91,11 +102,44 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: const Text("위치 트래킹 시작"),
                 onPressed: gpsEnabled && permissionGranted ? () {
                   Navigator.push(context,
-                      MaterialPageRoute(builder: (context) => MapTest()));
+                      MaterialPageRoute(builder: (context) => MapTest(currentUserId)));
                 } : null,
               )
             ),
-
+            ListView.builder(
+              shrinkWrap: true,
+              itemCount: userColor.length,
+              itemBuilder: (context, index) {
+                int userId = userColor.keys.elementAt(index);
+                MaterialColor color = userColor[userId]!;
+                return Padding(
+                  padding: const EdgeInsets.only(left: 130.0, right: 130.0, top: 8.0, bottom: 8.0),
+                  child: ElevatedButton(
+                    onPressed: () {
+                      setState(() {
+                        currentUserId = userId;
+                      });
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: color,
+                      // fixedSize: Size(70.0, 20.0)
+                      // onPrimary: Colors.white,
+                    ),
+                    child: Text('User ID: $userId',
+                      style: TextStyle(
+                          color: Colors.white
+                      ),
+                    ),
+                  ),
+                );},
+            ),
+            Text("Seleted User : ${currentUserId}",
+              style: TextStyle(
+                fontSize: 20.0,
+                fontWeight: FontWeight.bold,
+                color: userColor[currentUserId],
+              ),
+            )
           ],
         ),
       ),

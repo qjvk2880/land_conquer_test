@@ -6,6 +6,10 @@ import 'package:location/location.dart';
 import 'package:flutter/services.dart' show rootBundle;
 
 class MapTest extends StatefulWidget {
+  final int userId;
+
+  MapTest(this.userId);
+
   @override
   State<MapTest> createState() => _MapTestState();
 }
@@ -15,6 +19,14 @@ class _MapTestState extends State<MapTest> {
   final Location _location = Location();
   LocationData? currentLocation;
   LatLng? _currentLatLng;
+  late StreamSubscription<LocationData> locationSubscription;
+  Map<int, Color> userColor = {
+    1 : Colors.red,
+    2 : Colors.blue,
+    3 : Colors.green,
+    4 : Colors.yellow,
+    5 : Colors.deepPurple
+  };
 
   double tenMeterInLat = 1 / 1800;
   double tenMeterInLng = 1 / 1400;
@@ -36,6 +48,7 @@ class _MapTestState extends State<MapTest> {
 
   @override
   void initState() {
+    print("current userId : ${widget.userId}");
     super.initState();
     rootBundle.loadString("assets/map_style.txt").then((string){
       _mapStyle = string;
@@ -107,7 +120,7 @@ class _MapTestState extends State<MapTest> {
   }
 
   void trackLocation() async {
-    _location.onLocationChanged.listen(
+    locationSubscription = _location.onLocationChanged.listen(
           (newLoc) {
         currentLocation = newLoc;
         _updateMarker(newLoc);
@@ -154,8 +167,8 @@ class _MapTestState extends State<MapTest> {
     return Polygon(
         polygonId: PolygonId(polygonId),
         points: rectangle,
-        fillColor: Colors.red.withOpacity(0.3),
-        strokeColor: Colors.red,
+        fillColor: userColor[widget.userId]!.withOpacity(0.3),
+        strokeColor: userColor[widget.userId]!,
         strokeWidth: 1
     );
   }
@@ -176,4 +189,10 @@ class _MapTestState extends State<MapTest> {
     });
   }
 
+  @override
+  void dispose(){
+    _controller.future.then((controller) => controller.dispose());
+    locationSubscription.cancel();
+    super.dispose();
+  }
 }
